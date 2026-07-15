@@ -50,9 +50,15 @@ docker compose -f infra/docker-compose.yml up -d postgres redis minio
 pnpm db:push       # или db:migrate для версионных миграций
 pnpm db:seed
 
-# 5. приложение и realtime (в двух терминалах)
+# 5. бакет для вложений чата (MinIO)
+docker compose -f infra/docker-compose.yml exec minio \
+  mc alias set local http://localhost:9000 nebula nebula_dev_password
+docker compose -f infra/docker-compose.yml exec minio \
+  mc mb --ignore-existing local/nebula-media
+
+# 6. приложение и realtime (в двух терминалах)
 pnpm dev           # http://localhost:3000
-pnpm dev:realtime  # http://localhost:4000
+pnpm dev:realtime  # http://localhost:4000 (читает AUTH_SECRET из корневого .env)
 ```
 
 > **Windows без Docker-инфраструктуры в PATH:** убедитесь, что `pnpm` и
