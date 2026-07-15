@@ -53,6 +53,103 @@ const SERVICES = [
       { q: 'Оптимизирован под поиск?', a: 'Sitemap, OpenGraph, Schema.org, ЧПУ — включены.' },
     ],
   },
+  {
+    slug: 'crm-development',
+    category: 'crm',
+    title: 'CRM под ваши процессы',
+    excerpt: 'Система учёта клиентов, сделок и задач, заточенная под ваш бизнес.',
+    priceFrom: 25000000, // 250 000 ₽
+    durationDays: 45,
+    techStack: ['Next.js', 'TypeScript', 'PostgreSQL', 'Prisma', 'Redis'],
+    advantages: ['Ваши воронки', 'Роли и права', 'Интеграции', 'Отчёты и аналитика'],
+    stages: ['Аудит процессов', 'Проектирование', 'Разработка', 'Внедрение', 'Обучение'],
+    faq: [
+      { q: 'Интеграция с телефонией?', a: 'Да, подключаем SIP/АТС и мессенджеры.' },
+      { q: 'Перенос данных?', a: 'Мигрируем из Excel или текущей CRM.' },
+    ],
+  },
+  {
+    slug: 'business-automation',
+    category: 'automation',
+    title: 'Автоматизация бизнес-процессов',
+    excerpt: 'Убираем рутину: сценарии, интеграции, боты-помощники.',
+    priceFrom: 8000000, // 80 000 ₽
+    durationDays: 21,
+    techStack: ['Node.js', 'n8n', 'PostgreSQL', 'REST API'],
+    advantages: ['Экономия часов', 'Меньше ошибок', 'Прозрачность', 'Масштабируемость'],
+    stages: ['Картирование процессов', 'Дизайн сценариев', 'Реализация', 'Тест и запуск'],
+    faq: [
+      { q: 'С какими сервисами интегрируете?', a: 'CRM, таблицы, мессенджеры, платёжные и любые с API.' },
+    ],
+  },
+  {
+    slug: 'server-devops',
+    category: 'devops',
+    title: 'DevOps и настройка серверов',
+    excerpt: 'CI/CD, Docker, мониторинг и безопасная инфраструктура.',
+    priceFrom: 6000000, // 60 000 ₽
+    durationDays: 14,
+    techStack: ['Docker', 'Nginx', 'GitHub Actions', 'Prometheus'],
+    advantages: ['Быстрые деплои', 'Мониторинг', 'Бэкапы', 'Безопасность'],
+    stages: ['Аудит', 'Настройка окружения', 'CI/CD', 'Мониторинг и передача'],
+    faq: [
+      { q: 'Настроите бэкапы?', a: 'Да, автоматические с проверкой восстановления.' },
+    ],
+  },
+];
+
+// ── Портфолио и кейсы ───────────────────────────────────────
+const PROJECTS = [
+  {
+    slug: 'shop-telegram-bot',
+    title: 'Telegram-магазин с оплатой',
+    description: 'Бот-витрина с каталогом, корзиной и приёмом оплаты через ЮKassa. Админка для товаров и рассылок.',
+    techStack: ['Node.js', 'grammY', 'PostgreSQL'],
+    category: 'Telegram-боты',
+    link: null,
+    isCase: false,
+    isFeatured: true,
+  },
+  {
+    slug: 'logistics-crm',
+    title: 'CRM для логистической компании',
+    description:
+      'Задача: заявки терялись в мессенджерах, не было прозрачности по статусам.\n\nРешение: CRM с воронкой заявок, ролями диспетчер/водитель, интеграцией с картами и уведомлениями в Telegram.\n\nРезультат: время обработки заявки сократилось вдвое, потерь заявок — ноль.',
+    techStack: ['Next.js', 'PostgreSQL', 'Prisma', 'Redis'],
+    category: 'CRM',
+    link: null,
+    isCase: true,
+    isFeatured: true,
+  },
+  {
+    slug: 'saas-analytics',
+    title: 'SaaS-аналитика для e-commerce',
+    description:
+      'Задача: клиенту нужен был продукт с подпиской для анализа продаж магазинов.\n\nРешение: мультитенантный SaaS с дашбордами, биллингом и ролевым доступом. SSR-витрина + защищённый кабинет.\n\nРезультат: запуск за 10 недель, первые платящие клиенты в первый месяц.',
+    techStack: ['Next.js', 'TypeScript', 'PostgreSQL', 'Docker'],
+    category: 'SaaS',
+    link: null,
+    isCase: true,
+    isFeatured: false,
+  },
+];
+
+// ── Блог ────────────────────────────────────────────────────
+const POSTS = [
+  {
+    slug: 'kak-vybrat-stek-2026',
+    title: 'Как выбрать технологический стек в 2026',
+    excerpt: 'Разбираем, на что смотреть при выборе стека для веб-продукта — без хайпа.',
+    tags: ['разработка', 'архитектура'],
+    body: 'Выбор стека — это не мода, а компромисс между скоростью разработки, наймом и стоимостью поддержки.\n\nДля большинства продуктовых задач связка Next.js + TypeScript + PostgreSQL закрывает 90% потребностей и легко нанимается.\n\nМикросервисы нужны реже, чем кажется: начинайте с модульного монолита и выносите сервисы по мере роста нагрузки.',
+  },
+  {
+    slug: 'telegram-boty-dlya-biznesa',
+    title: 'Telegram-боты для бизнеса: где реальная польза',
+    excerpt: 'Когда бот экономит деньги, а когда — просто модная игрушка.',
+    tags: ['боты', 'автоматизация'],
+    body: 'Бот приносит пользу там, где есть повторяющийся диалог: приём заявок, ответы на частые вопросы, уведомления.\n\nСамая частая ошибка — пытаться заменить ботом полноценное приложение. Бот хорош как канал, а не как замена интерфейсу.\n\nПравильный бот всегда связан с бэкендом и админкой, иначе им невозможно управлять.',
+  },
 ];
 
 const FAQ = [
@@ -127,6 +224,43 @@ async function main() {
         isPinned: true,
         seoTitle: s.title,
         seoDescription: s.excerpt,
+      },
+    });
+  }
+
+  // ── Портфолио / кейсы ──
+  for (const [i, p] of PROJECTS.entries()) {
+    await prisma.project.upsert({
+      where: { slug: p.slug },
+      update: {},
+      create: {
+        slug: p.slug,
+        title: p.title,
+        description: { blocks: [{ type: 'text', text: p.description }] },
+        techStack: p.techStack,
+        category: p.category,
+        link: p.link,
+        isCase: p.isCase,
+        isFeatured: p.isFeatured,
+        order: i,
+      },
+    });
+  }
+
+  // ── Блог ──
+  for (const p of POSTS) {
+    await prisma.post.upsert({
+      where: { slug: p.slug },
+      update: {},
+      create: {
+        slug: p.slug,
+        title: p.title,
+        excerpt: p.excerpt,
+        body: { blocks: [{ type: 'text', text: p.body }] },
+        tags: p.tags,
+        seoTitle: p.title,
+        seoDescription: p.excerpt,
+        publishedAt: new Date(),
       },
     });
   }
