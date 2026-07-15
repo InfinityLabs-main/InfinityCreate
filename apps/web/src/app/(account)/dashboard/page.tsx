@@ -1,53 +1,83 @@
-import { auth, signOut } from '@/shared/auth/auth';
+import Link from 'next/link';
+import type { Metadata } from 'next';
+import { ArrowRight, Package } from 'lucide-react';
+import { requireUser } from '@/shared/auth/session';
+import { getUserOrders, getUserOrderStats } from '@/features/orders/queries';
 import { Card } from '@/shared/ui/Card';
+import { StatusPill } from '@/shared/ui/StatusPill';
 import { Button } from '@/shared/ui/Button';
+import { formatPrice, formatDate } from '@/shared/lib/format';
 
-// Скелет кабинета клиента. Наполняется в Спринте 2
-// (заявки, заказы, документы, уведомления, чат).
+export const metadata: Metadata = { title: 'Кабинет', robots: { index: false } };
+
 export default async function DashboardPage() {
-  const session = await auth();
-
-  async function logout() {
-    'use server';
-    await signOut({ redirectTo: '/' });
-  }
+  const user = await requireUser();
+  const [stats, orders] = await Promise.all([
+    getUserOrderStats(user.id),
+    getUserOrders(user.id),
+  ]);
+  const recent = orders.slice(0, 4);
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-16">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-accent">
-            роль: {session?.user?.role}
+    <div>
+      <h1 className="text-2xl font-semibold tracking-tight">
+        Здравствуйте, {user.name ?? 'клиент'}
+      </h1>
+      <p className="mt-1 text-ink-soft">Обзор ваших заказов и активности.</p>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <Card>
+          <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">Всего заказов</p>
+          <p className="mt-2 text-3xl font-semibold tabular-nums">{stats.total}</p>
+        </Card>
+        <Card>
+          <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">Активных</p>
+          <p className="mt-2 text-3xl font-semibold tabular-nums">{stats.active}</p>
+        </Card>
+        <Card>
+          <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">
+            Новых уведомлений
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-            Кабинет · {session?.user?.name ?? session?.user?.email}
-          </h1>
+          <p className="mt-2 text-3xl font-semibold tabular-nums">{stats.unreadNotifications}</p>
+        </Card>
+      </div>
+
+      <div className="mt-10 flex items-center justify-between">
+        <h2 className="text-lg font-semibold tracking-tight">Последние заказы</h2>
+        <Link href="/orders" className="text-sm text-accent hover:opacity-80">
+          Все заказы →
+        </Link>
+      </div>
+
+      {recent.length === 0 ? (
+        <div className="glass-panel mt-4 flex flex-col items-center gap-3 p-10 text-center">
+          <Package className="text-ink-faint" size={32} />
+          <p className="text-ink-soft">У вас пока нет заказов.</p>
+          <Link href="/services">
+            <Button>
+              Выбрать услугу <ArrowRight size={16} />
+            </Button>
+          </Link>
         </div>
-        <form action={logout}>
-          <Button variant="ghost" type="submit">
-            Выйти
-          </Button>
-        </form>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">Заказы</p>
-          <p className="mt-2 text-3xl font-semibold">0</p>
-        </Card>
-        <Card>
-          <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">В работе</p>
-          <p className="mt-2 text-3xl font-semibold">0</p>
-        </Card>
-        <Card>
-          <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">Сообщения</p>
-          <p className="mt-2 text-3xl font-semibold">0</p>
-        </Card>
-      </div>
-
-      <p className="mt-8 text-sm text-ink-faint">
-        Разделы кабинета (заявки, оплата, документы, чат) подключаются в Спринте 2.
-      </p>
+      ) : (
+        <div className="mt-4 flex flex-col gap-3">
+          {recent.map((o) => (
+            <Link key={o.id} href={`/orders/${o.id}`}>
+              <Card className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs text-ink-faint">№{o.number}</span>
+                    <StatusPill status={o.status} />
+                  </div>
+                  <p className="mt-1 truncate font-medium">{o.service.title}</p>
+                  <p className="text-xs text-ink-faint">{formatDate(o.createdAt)}</p>
+                </div>
+                <span className="shrink-0 font-medium tabular-nums">{formatPrice(o.amount)}</span>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

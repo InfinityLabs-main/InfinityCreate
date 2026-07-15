@@ -51,6 +51,7 @@ model User {
   notifications     Notification[]
   sessions          Session[]
   refreshTokens     RefreshToken[]
+  resetTokens       PasswordResetToken[]
   auditLogs         AuditLog[]
 
   createdAt DateTime  @default(now())
@@ -85,6 +86,19 @@ model RefreshToken {
 
   @@index([userId])
   @@index([family])
+}
+
+// Токены восстановления пароля (храним хеш, одноразовые, с TTL).
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 // ══════════════════════════════════════════════════════════════

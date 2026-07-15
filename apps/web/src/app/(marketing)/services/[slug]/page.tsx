@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Check, Clock, ArrowRight } from 'lucide-react';
+import { Check, Clock } from 'lucide-react';
 import {
   getServiceBySlug,
   getRelatedServices,
@@ -9,8 +9,8 @@ import {
 } from '@/features/services/queries';
 import { parseFaq, parseStringList, parseDescription } from '@/features/services/content';
 import { ServiceCard } from '@/features/services/ServiceCard';
+import { OrderForm } from '@/features/orders/OrderForm';
 import { Badge } from '@/shared/ui/Badge';
-import { Button } from '@/shared/ui/Button';
 import { formatPrice } from '@/shared/lib/format';
 import { JsonLd, breadcrumbLd, serviceLd } from '@/shared/seo/jsonld';
 
@@ -51,9 +51,7 @@ export default async function ServiceDetailPage({
   const service = await getServiceBySlug(slug);
   if (!service) notFound();
 
-  const [related] = await Promise.all([
-    getRelatedServices(service.categoryId, service.id),
-  ]);
+  const related = await getRelatedServices(service.categoryId, service.id);
 
   const description = parseDescription(service.description);
   const advantages = parseStringList(service.advantages);
@@ -180,18 +178,11 @@ export default async function ServiceDetailPage({
                 Срок: {service.durationDays} дней
               </div>
 
-              <Link href={`/login?callbackUrl=/dashboard`} className="mt-6 block">
-                <Button className="w-full">
-                  Оставить заявку <ArrowRight size={16} />
-                </Button>
-              </Link>
-              <Link href="/contacts" className="mt-2 block">
-                <Button variant="outline" className="w-full">
-                  Задать вопрос
-                </Button>
-              </Link>
+              <div className="mt-6">
+                <OrderForm serviceId={service.id} />
+              </div>
               <p className="mt-4 text-center text-xs text-ink-faint">
-                Точную стоимость и сроки уточнит менеджер в чате.
+                Нужен аккаунт — предложим войти. Точную стоимость уточнит менеджер.
               </p>
             </div>
           </aside>

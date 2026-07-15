@@ -60,6 +60,15 @@ export default async function LoginPage({
             Войти
           </Button>
         </form>
+
+        <div className="mt-5 flex items-center justify-between text-sm">
+          <Link href="/register" className="text-accent hover:opacity-80">
+            Создать аккаунт
+          </Link>
+          <Link href="/forgot-password" className="text-ink-soft hover:text-ink">
+            Забыли пароль?
+          </Link>
+        </div>
       </div>
     </div>
   );

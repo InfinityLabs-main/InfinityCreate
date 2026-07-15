@@ -23,6 +23,7 @@ export const ROUTE_GUARDS: { prefix: string; required: Role }[] = [
   { prefix: '/dashboard', required: 'CLIENT' },
   { prefix: '/orders', required: 'CLIENT' },
   { prefix: '/chat', required: 'CLIENT' },
+  { prefix: '/notifications', required: 'CLIENT' },
 ];
 
 export function requiredRoleForPath(pathname: string): Role | null {
