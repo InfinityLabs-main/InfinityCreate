@@ -1,0 +1,31 @@
+{
+  "name": "nebula",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Nebula — платформа продажи цифровых услуг под ключ",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @nebula/web dev",
+    "dev:realtime": "pnpm --filter @nebula/realtime dev",
+    "build": "pnpm --filter @nebula/web build",
+    "start": "pnpm --filter @nebula/web start",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @nebula/db generate",
+    "db:migrate": "pnpm --filter @nebula/db migrate",
+    "db:push": "pnpm --filter @nebula/db push",
+    "db:seed": "pnpm --filter @nebula/db seed",
+    "db:studio": "pnpm --filter @nebula/db studio",
+    "docker:up": "docker compose -f infra/docker-compose.yml up -d",
+    "docker:up:build": "docker compose -f infra/docker-compose.yml up -d --build",
+    "docker:down": "docker compose -f infra/docker-compose.yml down",
+    "docker:logs": "docker compose -f infra/docker-compose.yml logs -f"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  }
+}

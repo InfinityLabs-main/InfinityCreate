@@ -1,0 +1,100 @@
+# ─────────────────────────────────────────────────────────────
+# Nebula — локальное / VPS окружение.
+#   docker compose -f infra/docker-compose.yml up -d
+# Переменные берутся из корневого .env (скопируйте из .env.example).
+# ─────────────────────────────────────────────────────────────
+name: nebula
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nebula}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nebula_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-nebula}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - ./.data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-nebula}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - ./.data/redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-nebula}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-nebula_dev_password}
+    ports:
+      - '${MINIO_PORT:-9000}:9000'
+      - '${MINIO_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - ./.data/minio:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.web
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      # внутри сети compose хосты — имена сервисов
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nebula}:${POSTGRES_PASSWORD:-nebula_dev_password}@postgres:5432/${POSTGRES_DB:-nebula}?schema=public
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - '3000'
+
+  realtime:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.realtime
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    expose:
+      - '4000'
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+      - realtime

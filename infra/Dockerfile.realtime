@@ -1,0 +1,25 @@
+# ── Multi-stage сборка realtime-сервиса (Socket.IO) ──────────
+FROM node:20-alpine AS base
+RUN corepack enable
+WORKDIR /app
+
+FROM base AS deps
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
+COPY apps/realtime/package.json apps/realtime/
+RUN pnpm install --frozen-lockfile || pnpm install
+
+FROM base AS build
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/realtime/node_modules ./apps/realtime/node_modules
+COPY . .
+RUN pnpm --filter @nebula/realtime build
+
+FROM base AS runner
+ENV NODE_ENV=production
+RUN addgroup -g 1001 nodejs && adduser -u 1001 -G nodejs -S node-rt
+COPY --from=build --chown=node-rt:nodejs /app/apps/realtime/dist ./dist
+COPY --from=build --chown=node-rt:nodejs /app/apps/realtime/node_modules ./node_modules
+COPY --from=build --chown=node-rt:nodejs /app/apps/realtime/package.json ./
+USER node-rt
+EXPOSE 4000
+CMD ["node", "dist/index.js"]

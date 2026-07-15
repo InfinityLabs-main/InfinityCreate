@@ -1,0 +1,460 @@
+// ─────────────────────────────────────────────────────────────
+// Nebula — модель данных.
+// Соглашения:
+//   • денежные суммы — минорные единицы (копейки), тип Int, НИКОГДА float
+//   • мягкое удаление контента через deletedAt
+//   • переходы статусов заказа валидируются в домене (state-machine),
+//     каждый переход → запись в OrderEvent
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Пользователи и доступ
+// ══════════════════════════════════════════════════════════════
+
+enum Role {
+  CLIENT
+  MANAGER
+  ADMIN
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String?
+  phone        String?
+  passwordHash String?
+  role         Role      @default(CLIENT)
+  emailVerified DateTime?
+
+  // 2FA (TOTP) — обязательна для ADMIN
+  twoFASecret  String?
+  twoFAEnabled Boolean   @default(false)
+
+  balance      Int       @default(0) // копейки; предоплаты/бонусы
+  note         String?               // внутренняя заметка менеджера
+
+  orders            Order[]
+  ordersAssigned    Order[]        @relation("OrderAssignee")
+  ticketsAsClient   Ticket[]       @relation("TicketClient")
+  ticketsAsAssignee Ticket[]       @relation("TicketAssignee")
+  messages          Message[]
+  reviews           Review[]
+  notifications     Notification[]
+  sessions          Session[]
+  refreshTokens     RefreshToken[]
+  auditLogs         AuditLog[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([role])
+  @@index([deletedAt])
+}
+
+// Сессии Auth.js (database strategy для админ-зоны) + refresh-ротация
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionToken String   @unique
+  expires      DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique      // храним хеш, не сам токен
+  family    String                 // для детекции replay/ротации
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([family])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Каталог услуг
+// ══════════════════════════════════════════════════════════════
+
+model Category {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  description String?
+  icon        String?
+  order       Int       @default(0)
+  services    Service[]
+  createdAt   DateTime  @default(now())
+  deletedAt   DateTime?
+}
+
+model Service {
+  id           String   @id @default(cuid())
+  slug         String   @unique                 // ЧПУ: /services/telegram-bots
+  title        String
+  excerpt      String                            // краткое описание
+  description  Json                              // полное описание: блоки
+  advantages   Json                              // преимущества (массив)
+  stages       Json                              // этапы выполнения (массив)
+  faq          Json                              // вопросы-ответы (массив)
+  priceFrom    Int                               // копейки
+  durationDays Int
+  techStack    String[]
+
+  categoryId   String
+  category     Category @relation(fields: [categoryId], references: [id])
+
+  images       Media[]  @relation("ServiceMedia")
+  orders       Order[]
+
+  isPinned     Boolean  @default(false)
+  isHidden     Boolean  @default(false)
+
+  seoTitle       String?
+  seoDescription String?
+  ogImage        String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([categoryId])
+  @@index([isHidden, isPinned])
+  @@index([techStack], type: Gin)
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Заказы
+// ══════════════════════════════════════════════════════════════
+
+enum OrderStatus {
+  NEW         // Новый
+  DISCUSSION  // Обсуждение
+  IN_PROGRESS // В работе
+  REVIEW      // На проверке
+  DONE        // Завершён
+  CANCELLED   // Отменён
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  number    Int         @unique @default(autoincrement())
+
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+
+  serviceId String
+  service   Service     @relation(fields: [serviceId], references: [id])
+
+  status    OrderStatus @default(NEW)
+  amount    Int                                  // копейки (зафиксированная цена)
+
+  assigneeId String?
+  assignee   User?      @relation("OrderAssignee", fields: [assigneeId], references: [id])
+
+  details    String?                             // требования клиента
+  payments   Payment[]
+  documents  Document[]
+  ticket     Ticket?
+  timeline   OrderEvent[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status, userId])
+  @@index([assigneeId])
+}
+
+// Аудит переходов статуса заказа
+model OrderEvent {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  from      OrderStatus?
+  to        OrderStatus
+  actorId   String?
+  comment   String?
+  createdAt DateTime    @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Платежи
+// ══════════════════════════════════════════════════════════════
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  CANCELLED
+  REFUNDED
+}
+
+model Payment {
+  id         String        @id @default(cuid())
+  orderId    String
+  order      Order         @relation(fields: [orderId], references: [id])
+  provider   String                              // yookassa | crypto | invoice | mock
+  status     PaymentStatus @default(PENDING)
+  amount     Int                                 // копейки
+  currency   String        @default("RUB")
+  externalId String?       @unique               // id платежа у провайдера (идемпотентность)
+  raw        Json?                               // сырой ответ провайдера для реконсиляции
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Чат / поддержка
+// ══════════════════════════════════════════════════════════════
+
+enum TicketStatus {
+  OPEN
+  PENDING
+  CLOSED
+}
+
+model Ticket {
+  id         String       @id @default(cuid())
+  subject    String?
+  orderId    String?      @unique
+  order      Order?       @relation(fields: [orderId], references: [id])
+
+  clientId   String
+  client     User         @relation("TicketClient", fields: [clientId], references: [id])
+
+  assigneeId String?
+  assignee   User?        @relation("TicketAssignee", fields: [assigneeId], references: [id])
+
+  status     TicketStatus @default(OPEN)
+  messages   Message[]
+
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([clientId])
+  @@index([assigneeId])
+  @@index([status])
+}
+
+model Message {
+  id        String    @id @default(cuid())
+  ticketId  String
+  ticket    Ticket    @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id])
+  body      String
+  media     Media[]   @relation("MessageMedia")
+  readAt    DateTime?                            // статус прочтения
+  createdAt DateTime  @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+// Шаблоны быстрых ответов для поддержки
+model QuickReply {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Медиа и документы (S3 / MinIO)
+// ══════════════════════════════════════════════════════════════
+
+model Media {
+  id        String   @id @default(cuid())
+  key       String   @unique                     // ключ объекта в S3
+  url       String?                              // публичный/presigned (может истечь)
+  mime      String
+  size      Int
+  width     Int?
+  height    Int?
+  alt       String?
+
+  serviceId String?
+  service   Service? @relation("ServiceMedia", fields: [serviceId], references: [id])
+  messageId String?
+  message   Message? @relation("MessageMedia", fields: [messageId], references: [id])
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([serviceId])
+  @@index([messageId])
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  title     String
+  key       String                               // ключ в S3
+  mime      String
+  size      Int
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Портфолио / кейсы
+// ══════════════════════════════════════════════════════════════
+
+model Project {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  description Json
+  techStack   String[]
+  link        String?
+  category    String?
+  images      Media[]
+  isCase      Boolean   @default(false)          // true → развёрнутый кейс
+  isFeatured  Boolean   @default(false)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  deletedAt   DateTime?
+
+  @@index([isCase, isFeatured])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Блог (CMS)
+// ══════════════════════════════════════════════════════════════
+
+model Post {
+  id             String    @id @default(cuid())
+  slug           String    @unique
+  title          String
+  excerpt        String?
+  body           Json                             // блочный контент
+  cover          String?
+  tags           String[]
+  authorId       String?
+  seoTitle       String?
+  seoDescription String?
+  ogImage        String?
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  @@index([publishedAt])
+  @@index([tags], type: Gin)
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Отзывы (модерация)
+// ══════════════════════════════════════════════════════════════
+
+model Review {
+  id         String   @id @default(cuid())
+  clientId   String
+  client     User     @relation(fields: [clientId], references: [id])
+  authorName String?                             // подпись, если нужна отличная от имени
+  rating     Int                                 // 1..5
+  body       String
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([isApproved])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FAQ
+// ══════════════════════════════════════════════════════════════
+
+model Faq {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String?
+  order     Int      @default(0)
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Конструктор страниц + настройки сайта (CMS)
+// ══════════════════════════════════════════════════════════════
+
+// Блоки страниц: главная и посадочные собираются из PageBlock.
+// type → React-компонент из реестра; props валидируются Zod-схемой блока.
+model PageBlock {
+  id        String   @id @default(cuid())
+  page      String                               // "home", "landing:crm", ...
+  type      String                               // "hero" | "services" | "cases" | ...
+  order     Int      @default(0)
+  props     Json
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([page, order])
+}
+
+// key-value настройки: логотип, контакты, соцсети, SEO, аналитика, футер, меню, баннеры
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Уведомления
+// ══════════════════════════════════════════════════════════════
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String                               // order.status, message.new, payment, admin
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Журнал аудита (append-only)
+// ══════════════════════════════════════════════════════════════
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id])
+  action    String                               // "service.update", "order.status", ...
+  target    String                               // "Service:cuid", ...
+  meta      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([target])
+}

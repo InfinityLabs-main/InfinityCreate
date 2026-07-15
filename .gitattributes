@@ -1,0 +1,5 @@
+# Единые LF-окончания для текстовых файлов (кросс-платформенно)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.woff2 binary
