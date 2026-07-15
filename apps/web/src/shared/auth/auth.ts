@@ -13,7 +13,12 @@ const credentialsSchema = z.object({
 // Полная конфигурация (Node runtime): базовый edge-safe authConfig +
 // Credentials-провайдер, которому нужны Prisma и Argon2.
 // Refresh-ротация и 2FA-челлендж админа — Спринт 2 (модель RefreshToken готова).
-export const { handlers, auth, signIn, signOut } = NextAuth({
+//
+// TS2742: под pnpm выводимые типы результата NextAuth v5 ссылаются на глубокие
+// пути next-auth/@auth-core и не поддаются именованию при declaration-emit
+// (@ts-ignore это не подавляет — это не ошибка выражения). Оборачиваем результат
+// нашими явными типами: рантайм неизменен, а тип каждого экспорта — нейменуемый.
+const nextAuth = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
@@ -35,3 +40,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
 });
+
+// Граница типов: результат NextAuth непортируем под pnpm (TS2742). Приводим к
+// локальным нейменуемым сигнатурам — этого достаточно для наших вызовов
+// (auth() в RSC/route, signIn/signOut в Server Actions, handlers в route.ts).
+type RouteHandler = (req: Request) => Promise<Response>;
+type Session = import('next-auth').Session;
+// Запрос, который NextAuth прокидывает в middleware-обёртку: NextRequest + auth.
+type AuthedRequest = import('next/server').NextRequest & { auth: Session | null };
+type MiddlewareReturn =
+  | import('next/server').NextResponse
+  | Response
+  | undefined
+  | Promise<import('next/server').NextResponse | Response | undefined>;
+
+interface AuthExports {
+  handlers: { GET: RouteHandler; POST: RouteHandler };
+  // auth перегружен: получение сессии и обёртка middleware.
+  auth: {
+    (): Promise<Session | null>;
+    (handler: (req: AuthedRequest) => MiddlewareReturn): RouteHandler;
+  };
+  signIn: (provider?: string, options?: Record<string, unknown>) => Promise<unknown>;
+  signOut: (options?: Record<string, unknown>) => Promise<unknown>;
+}
+
+const authExports = nextAuth as unknown as AuthExports;
+export const handlers = authExports.handlers;
+export const auth = authExports.auth;
+export const signIn = authExports.signIn;
+export const signOut = authExports.signOut;

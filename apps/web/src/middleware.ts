@@ -9,7 +9,9 @@ const { auth } = NextAuth(authConfig);
 
 // Рубеж №1 RBAC: доступ к сегментам маршрутов.
 // Ресурсное владение («свой ли заказ») проверяется в use-case (рубеж №2).
-export default auth((req) => {
+// Явный тип middleware — чтобы default-экспорт был нейменуемым под pnpm (TS2742).
+// Тело обёрнуто auth(); приводим к нейменуемой сигнатуре обработчика запроса.
+const middleware = auth((req) => {
   const { pathname } = req.nextUrl;
   const required = requiredRoleForPath(pathname);
   if (!required) return NextResponse.next();
@@ -28,6 +30,10 @@ export default auth((req) => {
 
   return NextResponse.next();
 });
+
+// Нейменуемая сигнатура для default-экспорта (обход TS2742 под pnpm).
+const handler = middleware as (req: Request) => Promise<Response>;
+export default handler;
 
 export const config = {
   // Исключаем статику и внутренние пути Next.

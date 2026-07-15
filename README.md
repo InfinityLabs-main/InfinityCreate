@@ -35,6 +35,10 @@ infra/        docker-compose, Nginx, Dockerfile.web, Dockerfile.realtime
 # 1. окружение
 cp .env.example .env
 #   сгенерируйте секрет:  openssl rand -base64 32  →  AUTH_SECRET
+#   Prisma и Next читают .env из своей директории, поэтому продублируйте:
+cp .env apps/web/.env
+cp .env packages/db/.env
+#   (все три .env в .gitignore — секрет не попадёт в репозиторий)
 
 # 2. зависимости
 pnpm install
@@ -50,6 +54,10 @@ pnpm db:seed
 pnpm dev           # http://localhost:3000
 pnpm dev:realtime  # http://localhost:4000
 ```
+
+> **Windows без Docker-инфраструктуры в PATH:** убедитесь, что `pnpm` и
+> `docker` доступны в оболочке. Docker Desktop требует WSL2 — при первом
+> запуске может понадобиться `wsl --shutdown` и перезапуск Docker Desktop.
 
 ### Демо-доступы (после `db:seed`)
 

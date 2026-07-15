@@ -4,7 +4,7 @@ import type { Role } from '@nebula/db';
 // Edge-безопасная конфигурация: НИКАКИХ импортов Prisma / Node-крипто.
 // Используется в middleware (Edge runtime) и расширяется в auth.ts
 // провайдерами, работающими в Node-runtime.
-export const authConfig = {
+export const authConfig: NextAuthConfig = {
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },
   providers: [], // добавляются в auth.ts (Credentials требует Prisma+Argon2)
@@ -21,4 +21,4 @@ export const authConfig = {
       return session;
     },
   },
-} satisfies NextAuthConfig;
+};
