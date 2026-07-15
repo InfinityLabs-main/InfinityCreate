@@ -18,6 +18,7 @@ export async function getUserOrder(userId: string, orderId: string) {
       assignee: { select: { name: true } },
       documents: { orderBy: { createdAt: 'desc' } },
       timeline: { orderBy: { createdAt: 'asc' } },
+      payments: { orderBy: { createdAt: 'desc' } },
     },
   });
 }

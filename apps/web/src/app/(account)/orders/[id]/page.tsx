@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { FileText, MessageSquare, CreditCard } from 'lucide-react';
+import { FileText, MessageSquare, CreditCard, CheckCircle2, Clock3 } from 'lucide-react';
 import { requireUser } from '@/shared/auth/session';
 import { getUserOrder } from '@/features/orders/queries';
+import { initPayment } from '@/features/payments/actions';
 import { StatusPill } from '@/shared/ui/StatusPill';
 import { Card } from '@/shared/ui/Card';
 import { Button } from '@/shared/ui/Button';
@@ -23,6 +24,10 @@ export default async function OrderDetailPage({
   // Проверка владения внутри запроса (рубеж №2 RBAC).
   const order = await getUserOrder(user.id, id);
   if (!order) notFound();
+
+  const isPaid = order.payments.some((p) => p.status === 'SUCCEEDED');
+  const isPending = !isPaid && order.payments.some((p) => p.status === 'PENDING');
+  const canPay = !isPaid && order.status !== 'CANCELLED';
 
   return (
     <div>
@@ -112,9 +117,27 @@ export default async function OrderDetailPage({
             )}
 
             {/* Оплата — реализуется в Спринте 3 (пока ведёт в чат/поддержку) */}
-            <Button className="mt-5 w-full" disabled>
-              <CreditCard size={16} /> Оплатить (скоро)
-            </Button>
+            {isPaid ? (
+              <div className="mt-5 flex items-center gap-2 rounded-xl border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok">
+                <CheckCircle2 size={18} /> Заказ оплачен
+              </div>
+            ) : (
+              <>
+                {isPending && (
+                  <div className="mt-5 flex items-center gap-2 rounded-xl border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
+                    <Clock3 size={18} /> Платёж обрабатывается
+                  </div>
+                )}
+                {canPay && (
+                  <form action={initPayment} className="mt-4">
+                    <input type="hidden" name="orderId" value={order.id} />
+                    <Button type="submit" className="w-full">
+                      <CreditCard size={16} /> {isPending ? 'Оплатить снова' : 'Оплатить'}
+                    </Button>
+                  </form>
+                )}
+              </>
+            )}
             <Link href="/chat" className="mt-2 block">
               <Button variant="outline" className="w-full">
                 <MessageSquare size={16} /> Обсудить в чате
