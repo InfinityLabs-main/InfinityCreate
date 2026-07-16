@@ -19,7 +19,8 @@ export function hasRole(role: Role | undefined, required: Role): boolean {
 
 // Какие сегменты маршрутов доступны какой минимальной роли.
 export const ROUTE_GUARDS: { prefix: string; required: Role }[] = [
-  { prefix: '/admin', required: 'ADMIN' },
+  // /admin доступен с MANAGER; admin-only разделы гейтятся на страницах.
+  { prefix: '/admin', required: 'MANAGER' },
   { prefix: '/dashboard', required: 'CLIENT' },
   { prefix: '/orders', required: 'CLIENT' },
   { prefix: '/chat', required: 'CLIENT' },
