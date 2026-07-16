@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { prisma } from '@nebula/db';
 import { requireUser } from '@/shared/auth/session';
 import { s3, S3_BUCKET } from '@/infra/storage/s3';
+import { rateLimit, LIMITS } from '@/shared/security/rate-limit';
 
 // Безопасная загрузка: whitelist MIME, лимит размера, ренейм, приватный бакет.
 const ALLOWED_MIME = new Set([
@@ -35,6 +36,11 @@ export async function presignUpload(input: {
   size: number;
 }): Promise<PresignResult> {
   const user = await requireUser();
+  const rl = await rateLimit(`upload:${user.id}`, LIMITS.upload.limit, LIMITS.upload.windowSec);
+  if (!rl.ok) {
+    return { ok: false, error: `Слишком много загрузок. Подождите ${rl.retryAfter} с.` };
+  }
+
   const parsed = presignSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Некорректный файл.' };

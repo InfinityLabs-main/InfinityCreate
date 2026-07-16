@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { prisma } from '@nebula/db';
 import { requireUser } from '@/shared/auth/session';
+import { rateLimit, LIMITS } from '@/shared/security/rate-limit';
 
 // Персист сообщений делает web-приложение (единый источник истины).
 // Realtime-сервис лишь ретранслирует событие подписчикам комнаты.
@@ -34,6 +35,13 @@ export async function sendMessage(input: {
   mediaKeys?: string[];
 }): Promise<SendMessageResult> {
   const user = await requireUser();
+
+  // Анти-флуд: лимит сообщений на пользователя.
+  const rl = await rateLimit(`msg:${user.id}`, LIMITS.message.limit, LIMITS.message.windowSec);
+  if (!rl.ok) {
+    return { ok: false, error: `Слишком часто. Подождите ${rl.retryAfter} с.` };
+  }
+
   const parsed = sendSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Некорректные данные.' };

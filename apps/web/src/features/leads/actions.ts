@@ -2,6 +2,8 @@
 
 import { z } from 'zod';
 import { prisma, Role } from '@nebula/db';
+import { rateLimit, LIMITS } from '@/shared/security/rate-limit';
+import { getRequestIp } from '@/shared/security/request-ip';
 
 // Заявка с контактной страницы. Если email уже есть — привязываем к клиенту,
 // иначе создаём «гостевого» клиента-заглушку (без пароля). Полноценная
@@ -18,6 +20,12 @@ export async function submitLead(
   _prev: LeadState,
   formData: FormData,
 ): Promise<LeadState> {
+  const ip = await getRequestIp();
+  const rl = await rateLimit(`lead:${ip}`, LIMITS.lead.limit, LIMITS.lead.windowSec);
+  if (!rl.ok) {
+    return { ok: false, error: `Слишком много заявок. Повторите через ${rl.retryAfter} с.` };
+  }
+
   const parsed = leadSchema.safeParse({
     name: formData.get('name'),
     email: formData.get('email'),

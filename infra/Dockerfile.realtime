@@ -1,25 +1,33 @@
 # ── Multi-stage сборка realtime-сервиса (Socket.IO) ──────────
 FROM node:20-alpine AS base
-RUN corepack enable
+RUN corepack enable && apk add --no-cache openssl
 WORKDIR /app
 
+# ── deps: ставим зависимости всего воркспейса (нужен @nebula/db) ──
 FROM base AS deps
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
 COPY apps/realtime/package.json apps/realtime/
+COPY packages/db/package.json packages/db/
 RUN pnpm install --frozen-lockfile || pnpm install
 
+# ── build: генерируем Prisma client и собираем TS realtime ──
 FROM base AS build
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/realtime/node_modules ./apps/realtime/node_modules
+# Полное дерево из deps (включая node_modules/.bin с prisma CLI).
+COPY --from=deps /app/ ./
 COPY . .
+RUN pnpm --filter @nebula/db generate
 RUN pnpm --filter @nebula/realtime build
 
+# ── runner ──
 FROM base AS runner
 ENV NODE_ENV=production
 RUN addgroup -g 1001 nodejs && adduser -u 1001 -G nodejs -S node-rt
-COPY --from=build --chown=node-rt:nodejs /app/apps/realtime/dist ./dist
-COPY --from=build --chown=node-rt:nodejs /app/apps/realtime/node_modules ./node_modules
-COPY --from=build --chown=node-rt:nodejs /app/apps/realtime/package.json ./
+# Копируем весь воркспейс с node_modules (pnpm-симлинки на @nebula/db,
+# @prisma/client и сгенерированный клиент разрешаются из корня).
+COPY --from=build --chown=node-rt:nodejs /app/node_modules ./node_modules
+COPY --from=build --chown=node-rt:nodejs /app/packages ./packages
+COPY --from=build --chown=node-rt:nodejs /app/apps/realtime/dist ./apps/realtime/dist
+COPY --from=build --chown=node-rt:nodejs /app/apps/realtime/package.json ./apps/realtime/
 USER node-rt
 EXPOSE 4000
-CMD ["node", "dist/index.js"]
+CMD ["node", "apps/realtime/dist/index.js"]

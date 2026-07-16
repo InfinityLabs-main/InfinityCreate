@@ -15,6 +15,7 @@ import {
   HelpCircle,
   Settings,
   Blocks,
+  ShieldCheck,
 } from 'lucide-react';
 import type { Role } from '@nebula/db';
 import { cn } from '@/shared/lib/cn';
@@ -34,6 +35,7 @@ const ITEMS: { href: string; label: string; icon: typeof Package; min: Role }[] 
   { href: '/admin/faq', label: 'FAQ', icon: HelpCircle, min: 'ADMIN' },
   { href: '/admin/builder', label: 'Главная', icon: Blocks, min: 'ADMIN' },
   { href: '/admin/settings', label: 'Настройки', icon: Settings, min: 'ADMIN' },
+  { href: '/admin/security', label: 'Безопасность', icon: ShieldCheck, min: 'ADMIN' },
 ];
 
 const RANK: Record<Role, number> = { CLIENT: 1, MANAGER: 2, ADMIN: 3 };

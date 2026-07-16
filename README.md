@@ -107,19 +107,25 @@ docker compose -f infra/docker-compose.yml exec web sh -lc "cd /app && node -e '
 
 ---
 
-## Что уже работает
+## Что реализовано (Спринты 0–6)
 
-- ✅ Monorepo (pnpm workspaces), строгий TS, единая Zod-валидация окружения
-- ✅ Полная Prisma-схема (User/Service/Order/Ticket/Message/Payment/PageBlock/AuditLog…)
-- ✅ Auth.js (Credentials + Argon2id), JWT-сессия, роль в клейме
-- ✅ RBAC на двух рубежах: middleware (сегменты) + политики действий
-- ✅ Дизайн-система: violet-blue токены, light/dark, glass-панели
-- ✅ Главная из блоков (конструктор) + рендерер реестра блоков
-- ✅ SEO-каркас: динамические `robots.txt` и `sitemap.xml`
-- ✅ Realtime-сервис (комнаты тикетов, typing, read-receipt) + Redis-adapter
-- ✅ Docker Compose + Nginx (сжатие, rate-limit, security-заголовки, WS-проксирование)
+- ✅ **Фундамент**: monorepo (pnpm), строгий TS, Zod-валидация env, полная
+  Prisma-схема, дизайн-система (violet-blue, light/dark, glass)
+- ✅ **Витрина** (SSR/ISR): каталог с фильтрами, карточка услуги, портфолио,
+  кейсы, блог, отзывы, FAQ, контакты; SEO — sitemap/robots/OpenGraph/JSON-LD
+- ✅ **Кабинет**: регистрация, вход, восстановление пароля, дашборд, заказы
+  (state-machine статусов + аудит), документы, уведомления
+- ✅ **Платежи**: провайдер-агностичная абстракция, ЮKassa + mock,
+  идемпотентные вебхуки
+- ✅ **Realtime-чат**: Socket.IO с JWT-аутентификацией сокета, комнаты,
+  «печатает…», read-receipts, вложения (presigned S3/MinIO)
+- ✅ **Админ-CMS**: dashboard, CRUD услуг/категорий/портфолио/блога, клиенты,
+  заказы, интерфейс поддержки, отзывы, FAQ, настройки, конструктор главной
+- ✅ **Безопасность**: Argon2id, 2FA (TOTP) админа, rate-limiting (Redis),
+  CSP + security-заголовки, RBAC на двух рубежах, аудит-лог, безопасная загрузка
+- ✅ **Инфраструктура**: Docker Compose + Nginx (сжатие, rate-limit, WS-прокси)
 
-## Дальше (Спринт 1+)
+## Эксплуатация
 
-Витрина (каталог, карточка услуги, портфолио, кейсы, блог, отзывы, контакты) →
-кабинет и заказы → платежи (ЮKassa + абстракция) → полноценный чат → админ-CMS и конструктор → харденинг и запуск.
+Развёртывание на VPS, бэкапы, обновление, диагностика — см.
+[`docs/RUNBOOK.md`](docs/RUNBOOK.md).

@@ -1,14 +1,23 @@
-import NextAuth from 'next-auth';
+import NextAuth, { CredentialsSignin } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { verify } from '@node-rs/argon2';
+import { authenticator } from 'otplib';
 import { z } from 'zod';
 import { prisma } from '@nebula/db';
 import { authConfig } from './auth.config';
+import { rateLimit, LIMITS } from '@/shared/security/rate-limit';
 
 const credentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  code: z.string().optional(), // TOTP-код для админа с 2FA
 });
+
+// Спец-ошибка: у админа включена 2FA, нужен код. UI ловит её и показывает
+// поле для кода. Отдельный код ошибки, чтобы отличать от неверного пароля.
+export class TwoFARequired extends CredentialsSignin {
+  override code = 'two_factor_required';
+}
 
 // Полная конфигурация (Node runtime): базовый edge-safe authConfig +
 // Credentials-провайдер, которому нужны Prisma и Argon2.
@@ -27,6 +36,14 @@ const nextAuth = NextAuth({
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
 
+        // Rate-limit по email: тормозим перебор паролей.
+        const rl = await rateLimit(
+          `login:${parsed.data.email.toLowerCase()}`,
+          LIMITS.login.limit,
+          LIMITS.login.windowSec,
+        );
+        if (!rl.ok) return null;
+
         const user = await prisma.user.findUnique({
           where: { email: parsed.data.email },
         });
@@ -34,6 +51,15 @@ const nextAuth = NextAuth({
 
         const ok = await verify(user.passwordHash, parsed.data.password);
         if (!ok) return null;
+
+        // 2FA-челлендж: если у пользователя включена 2FA — требуем валидный код.
+        if (user.twoFAEnabled && user.twoFASecret) {
+          const code = parsed.data.code?.trim();
+          if (!code) throw new TwoFARequired();
+          if (!authenticator.verify({ token: code, secret: user.twoFASecret })) {
+            throw new TwoFARequired();
+          }
+        }
 
         return { id: user.id, email: user.email, name: user.name, role: user.role };
       },

@@ -1,5 +1,15 @@
 import type { Metadata } from 'next';
+import { Nunito } from 'next/font/google';
 import './globals.css';
+
+// Nunito — округлый гротеск с полным набором весов. Даёт «скруглённый
+// и жирный» вид по всему сайту через переменную --font-sans.
+const nunito = Nunito({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '600', '700', '800', '900'],
+  variable: '--font-sans',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -25,11 +35,11 @@ const themeScript = `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" suppressHydrationWarning>
+    <html lang="ru" className={nunito.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans font-semibold antialiased">{children}</body>
     </html>
   );
 }

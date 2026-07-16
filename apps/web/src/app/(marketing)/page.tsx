@@ -7,10 +7,10 @@ import type { BlockData } from '@/features/cms-builder/registry';
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const blocks = await prisma.pageBlock.findMany({
-    where: { page: 'home' },
-    orderBy: { order: 'asc' },
-  });
+  // Fail-safe при недоступной БД во время сборки → фолбэк-hero ниже.
+  const blocks = await prisma.pageBlock
+    .findMany({ where: { page: 'home' }, orderBy: { order: 'asc' } })
+    .catch(() => []);
 
   const data: BlockData[] = blocks.map((b) => ({
     id: b.id,

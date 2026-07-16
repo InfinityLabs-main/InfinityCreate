@@ -30,7 +30,7 @@ const config: Config = {
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       borderRadius: {
-        card: '14px',
+        card: '20px',
       },
       backgroundImage: {
         'accent-gradient': 'linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-2)))',

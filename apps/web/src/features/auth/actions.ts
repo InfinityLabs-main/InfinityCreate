@@ -5,6 +5,8 @@ import { hash } from '@node-rs/argon2';
 import { z } from 'zod';
 import { prisma, Role } from '@nebula/db';
 import { signIn } from '@/shared/auth/auth';
+import { rateLimit, LIMITS } from '@/shared/security/rate-limit';
+import { getRequestIp } from '@/shared/security/request-ip';
 
 // Argon2id — те же параметры, что в seed. Хеш паролей.
 const ARGON = { memoryCost: 19456, timeCost: 2, outputLen: 32, parallelism: 1 };
@@ -24,6 +26,12 @@ const registerSchema = z
 export type AuthState = { ok: boolean; error?: string };
 
 export async function registerUser(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const ip = await getRequestIp();
+  const rl = await rateLimit(`register:${ip}`, LIMITS.register.limit, LIMITS.register.windowSec);
+  if (!rl.ok) {
+    return { ok: false, error: `Слишком много попыток. Повторите через ${rl.retryAfter} с.` };
+  }
+
   const parsed = registerSchema.safeParse({
     name: formData.get('name'),
     email: formData.get('email'),
@@ -60,6 +68,15 @@ export async function requestPasswordReset(
   _prev: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
+  const ip = await getRequestIp();
+  const rl = await rateLimit(
+    `pwreset:${ip}`,
+    LIMITS.passwordReset.limit,
+    LIMITS.passwordReset.windowSec,
+  );
+  // При превышении тоже возвращаем «ok» (anti-enumeration).
+  if (!rl.ok) return { ok: true };
+
   const parsed = emailSchema.safeParse({ email: formData.get('email') });
   // Не раскрываем существование email — всегда «ok» (anti-enumeration).
   if (!parsed.success) return { ok: true };

@@ -2,33 +2,43 @@ import { prisma } from '@nebula/db';
 import { cache } from 'react';
 
 // Запросы каталога. Обёрнуты в React cache() — дедупликация в пределах запроса.
+// Списковые запросы fail-safe (пустой массив при недоступной БД во время
+// сборки): страница отрендерится пустой, а ISR наполнит её в рантайме.
 
 export const getCategories = cache(async () => {
-  return prisma.category.findMany({
-    where: { deletedAt: null },
-    orderBy: { order: 'asc' },
-  });
+  try {
+    return await prisma.category.findMany({
+      where: { deletedAt: null },
+      orderBy: { order: 'asc' },
+    });
+  } catch {
+    return [];
+  }
 });
 
 export const getServices = cache(
   async (opts: { category?: string; q?: string } = {}) => {
-    return prisma.service.findMany({
-      where: {
-        isHidden: false,
-        deletedAt: null,
-        ...(opts.category ? { category: { slug: opts.category } } : {}),
-        ...(opts.q
-          ? {
-              OR: [
-                { title: { contains: opts.q, mode: 'insensitive' } },
-                { excerpt: { contains: opts.q, mode: 'insensitive' } },
-              ],
-            }
-          : {}),
-      },
-      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
-      include: { category: true },
-    });
+    try {
+      return await prisma.service.findMany({
+        where: {
+          isHidden: false,
+          deletedAt: null,
+          ...(opts.category ? { category: { slug: opts.category } } : {}),
+          ...(opts.q
+            ? {
+                OR: [
+                  { title: { contains: opts.q, mode: 'insensitive' } },
+                  { excerpt: { contains: opts.q, mode: 'insensitive' } },
+                ],
+              }
+            : {}),
+        },
+        orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
+        include: { category: true },
+      });
+    } catch {
+      return [];
+    }
   },
 );
 
@@ -56,10 +66,15 @@ export const getRelatedServices = cache(
 );
 
 // Все slug'и — для generateStaticParams / ISR.
+// Fail-safe при недоступной БД во время сборки (см. blog/queries.ts).
 export const getAllServiceSlugs = cache(async () => {
-  const rows = await prisma.service.findMany({
-    where: { isHidden: false, deletedAt: null },
-    select: { slug: true },
-  });
-  return rows.map((r) => r.slug);
+  try {
+    const rows = await prisma.service.findMany({
+      where: { isHidden: false, deletedAt: null },
+      select: { slug: true },
+    });
+    return rows.map((r) => r.slug);
+  } catch {
+    return [];
+  }
 });
