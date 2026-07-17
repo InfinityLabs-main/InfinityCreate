@@ -34,13 +34,11 @@ export function PageHeader({
           ))}
         </nav>
       )}
-      {eyebrow && (
-        <span className="font-mono text-xs uppercase tracking-widest text-accent">{eyebrow}</span>
-      )}
-      <h1 className="mt-2 text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+      {eyebrow && <span className="eyebrow mb-4">{eyebrow}</span>}
+      <h1 className="mt-1 text-balance font-display text-4xl font-bold tracking-tight sm:text-5xl">
         {title}
       </h1>
-      {description && <p className="mt-3 max-w-2xl text-ink-soft">{description}</p>}
+      {description && <p className="mt-4 max-w-2xl text-lg text-ink-soft">{description}</p>}
     </div>
   );
 }

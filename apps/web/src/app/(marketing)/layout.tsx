@@ -1,9 +1,8 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { ThemeToggle } from '@/shared/ui/ThemeToggle';
+import { LogoMark } from '@/shared/ui/LogoMark';
 
 const NAV = [
-  { href: '/', label: 'Главная' },
   { href: '/services', label: 'Услуги' },
   { href: '/portfolio', label: 'Портфолио' },
   { href: '/cases', label: 'Кейсы' },
@@ -16,38 +15,29 @@ const NAV = [
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 border-b border-hair/15 bg-ground/70 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <header className="sticky top-0 z-50 border-b border-hair/[0.07] bg-ground/70 backdrop-blur-xl">
+        <div className="mx-auto flex h-[66px] max-w-6xl items-center gap-8 px-7">
           <Link href="/" className="flex items-center gap-2.5">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent-gradient shadow-card">
-              <span className="h-3.5 w-3.5 rounded-full border-2 border-white/90" />
-            </span>
-            <b className="text-[17px] tracking-tight">
-              Nebula<span className="text-accent">.</span>
-            </b>
+            <LogoMark />
+            <b className="font-display text-lg font-semibold tracking-tight">Nebula</b>
           </Link>
-          <nav className="hidden items-center gap-1 lg:flex">
+          <nav className="ml-2 hidden items-center gap-6 text-sm text-ink-soft lg:flex">
             {NAV.map((n) => (
-              <Link
-                key={n.href}
-                href={n.href}
-                className="rounded-lg px-3 py-2 text-sm text-ink-soft transition-colors hover:bg-accent/5 hover:text-ink"
-              >
+              <Link key={n.href} href={n.href} className="transition-colors hover:text-ink">
                 {n.label}
               </Link>
             ))}
           </nav>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
+          <div className="ml-auto flex items-center gap-4">
             <Link
               href="/login"
-              className="rounded-xl border border-hair/30 px-4 py-2 text-sm text-ink transition-colors hover:border-accent/50 hover:bg-accent/5"
+              className="hidden text-sm text-ink-soft transition-colors hover:text-ink sm:inline"
             >
               Войти
             </Link>
             <Link
               href="/contacts"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-accent-gradient px-4 py-2 text-sm font-medium text-white shadow-card transition-opacity hover:opacity-90"
+              className="inline-flex items-center gap-2 rounded-xl bg-accent px-[18px] py-2.5 text-sm font-medium text-white shadow-glow transition-all hover:-translate-y-px hover:bg-accent-2"
             >
               Оставить заявку <ArrowRight className="h-4 w-4" />
             </Link>
@@ -57,17 +47,15 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 
       <main className="flex-1">{children}</main>
 
-      <footer className="border-t border-hair/15 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 px-6 text-sm text-ink-faint sm:flex-row sm:items-center">
-          <span>© {new Date().getFullYear()} Nebula — цифровые продукты под ключ</span>
-          <div className="flex gap-4">
-            <Link href="/faq" className="hover:text-ink">
-              FAQ
-            </Link>
-            <Link href="/reviews" className="hover:text-ink">
-              Отзывы
-            </Link>
-          </div>
+      <footer className="mt-10 border-t border-hair/[0.07] py-9">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 px-7 text-sm text-ink-faint sm:flex-row sm:items-center">
+          <Link href="/" className="flex items-center gap-2.5">
+            <LogoMark size={24} />
+            <b className="font-display text-base font-semibold text-ink">Nebula</b>
+          </Link>
+          <span className="font-mono text-[13px]">
+            © {new Date().getFullYear()} · digital-продукты и инфраструктура
+          </span>
         </div>
       </footer>
     </div>

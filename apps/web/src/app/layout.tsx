@@ -1,13 +1,29 @@
 import type { Metadata } from 'next';
-import { Nunito } from 'next/font/google';
+import { Manrope, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
-// Nunito — округлый гротеск с полным набором весов. Даёт «скруглённый
-// и жирный» вид по всему сайту через переменную --font-sans.
-const nunito = Nunito({
+// Display — Manrope (геометрический гротеск с полной кириллицей; близок к
+// Space Grotesk из макета, но, в отличие от него, поддерживает русский).
+const display = Manrope({
   subsets: ['latin', 'cyrillic'],
-  weight: ['400', '600', '700', '800', '900'],
+  weight: ['500', '600', '700', '800'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+// Body — Inter.
+const body = Inter({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '600'],
   variable: '--font-sans',
+  display: 'swap',
+});
+
+// Mono — JetBrains Mono (метрики, лог, чипы, eyebrow).
+const mono = JetBrains_Mono({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500'],
+  variable: '--font-mono',
   display: 'swap',
 });
 
@@ -26,20 +42,14 @@ export const metadata: Metadata = {
   },
 };
 
-// Инлайн-скрипт до гидрации: применяет сохранённую тему без вспышки.
-const themeScript = `
-(function(){try{
-  var t=localStorage.getItem('theme');
-  if(t){document.documentElement.setAttribute('data-theme',t);}
-}catch(e){}})();`;
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className={nunito.variable} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
-      <body className="font-sans font-semibold antialiased">{children}</body>
+    <html
+      lang="ru"
+      data-theme="dark"
+      className={`${display.variable} ${body.variable} ${mono.variable}`}
+    >
+      <body className="font-sans antialiased">{children}</body>
     </html>
   );
 }

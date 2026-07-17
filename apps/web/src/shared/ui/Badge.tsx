@@ -1,13 +1,13 @@
 import { cn } from '@/shared/lib/cn';
 import type { HTMLAttributes } from 'react';
 
-// Тех-стек / теги. Тонкий indigo-хайрлайн, моно-шрифт.
+// Чип технологии — моно-шрифт, тонкая рамка (стиль макета).
 export function Badge({ className, ...props }: HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border border-hair/25 bg-accent/5 px-2.5 py-1',
-        'font-mono text-xs text-ink-soft',
+        'inline-flex items-center rounded-md border border-hair/12 bg-hair/[0.02] px-2.5 py-1',
+        'font-mono text-[11.5px] text-ink-soft',
         className,
       )}
       {...props}

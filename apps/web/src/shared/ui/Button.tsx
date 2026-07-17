@@ -3,11 +3,13 @@ import type { ButtonHTMLAttributes } from 'react';
 
 type Variant = 'primary' | 'ghost' | 'outline';
 
+// Кнопки в стиле макета: сплошной violet (primary), линия (outline), тихая (ghost).
 const VARIANTS: Record<Variant, string> = {
   primary:
-    'bg-accent-gradient text-white shadow-card hover:brightness-110 active:brightness-95',
-  ghost: 'text-ink-soft hover:text-ink hover:bg-accent/5',
-  outline: 'border border-hair/30 text-ink hover:border-accent/50 hover:bg-accent/5',
+    'bg-accent text-white shadow-glow hover:bg-accent-2 hover:-translate-y-px',
+  outline:
+    'border border-hair/12 bg-hair/[0.02] text-ink hover:border-hair/25 hover:bg-hair/[0.05]',
+  ghost: 'text-ink-soft hover:text-ink',
 };
 
 export function Button({
@@ -18,8 +20,9 @@ export function Button({
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium',
-        'transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none',
+        'inline-flex items-center justify-center gap-2 rounded-xl px-[18px] py-2.5 text-sm font-medium',
+        'border border-transparent transition-all duration-200',
+        'disabled:opacity-50 disabled:pointer-events-none',
         VARIANTS[variant],
         className,
       )}
