@@ -2,43 +2,35 @@ import { prisma } from '@nebula/db';
 import { cache } from 'react';
 
 // Запросы каталога. Обёрнуты в React cache() — дедупликация в пределах запроса.
-// Списковые запросы fail-safe (пустой массив при недоступной БД во время
-// сборки): страница отрендерится пустой, а ISR наполнит её в рантайме.
+// Страницы рендерятся динамически (force-dynamic), поэтому запросы выполняются
+// в рантайме при доступной БД — fail-safe не нужен (ошибку лучше показать).
 
 export const getCategories = cache(async () => {
-  try {
-    return await prisma.category.findMany({
-      where: { deletedAt: null },
-      orderBy: { order: 'asc' },
-    });
-  } catch {
-    return [];
-  }
+  return prisma.category.findMany({
+    where: { deletedAt: null },
+    orderBy: { order: 'asc' },
+  });
 });
 
 export const getServices = cache(
   async (opts: { category?: string; q?: string } = {}) => {
-    try {
-      return await prisma.service.findMany({
-        where: {
-          isHidden: false,
-          deletedAt: null,
-          ...(opts.category ? { category: { slug: opts.category } } : {}),
-          ...(opts.q
-            ? {
-                OR: [
-                  { title: { contains: opts.q, mode: 'insensitive' } },
-                  { excerpt: { contains: opts.q, mode: 'insensitive' } },
-                ],
-              }
-            : {}),
-        },
-        orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
-        include: { category: true },
-      });
-    } catch {
-      return [];
-    }
+    return prisma.service.findMany({
+      where: {
+        isHidden: false,
+        deletedAt: null,
+        ...(opts.category ? { category: { slug: opts.category } } : {}),
+        ...(opts.q
+          ? {
+              OR: [
+                { title: { contains: opts.q, mode: 'insensitive' } },
+                { excerpt: { contains: opts.q, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
+      include: { category: true },
+    });
   },
 );
 

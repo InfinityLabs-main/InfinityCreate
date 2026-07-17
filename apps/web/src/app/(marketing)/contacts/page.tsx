@@ -5,7 +5,7 @@ import { LeadForm } from '@/features/leads/LeadForm';
 import { PageHeader } from '@/shared/ui/PageHeader';
 import { JsonLd, breadcrumbLd, organizationLd } from '@/shared/seo/jsonld';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Контакты',

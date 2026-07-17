@@ -6,7 +6,7 @@ import { Badge } from '@/shared/ui/Badge';
 import { formatDate } from '@/shared/lib/format';
 import { JsonLd, breadcrumbLd } from '@/shared/seo/jsonld';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Блог',

@@ -11,7 +11,7 @@ import { Badge } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
 import { JsonLd, breadcrumbLd } from '@/shared/seo/jsonld';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 export async function generateStaticParams() {
   const slugs = await getAllProjectSlugs();

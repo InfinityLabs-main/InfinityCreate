@@ -2,9 +2,9 @@ import { prisma } from '@nebula/db';
 import { BlockRenderer } from '@/features/cms-builder/BlockRenderer';
 import type { BlockData } from '@/features/cms-builder/registry';
 
-// Главная собирается из блоков (конструктор). ISR — ревалидация по тегу
-// при правках в CMS (Спринт 5); пока — периодическая.
-export const revalidate = 60;
+// Главная собирается из блоков (конструктор). Рендерим динамически, чтобы
+// правки в CMS отражались сразу и не залипал пустой ISR-снимок при старте.
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   // Fail-safe при недоступной БД во время сборки → фолбэк-hero ниже.

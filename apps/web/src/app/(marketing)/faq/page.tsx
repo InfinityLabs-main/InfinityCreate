@@ -3,7 +3,7 @@ import { getVisibleFaq } from '@/features/content/queries';
 import { PageHeader } from '@/shared/ui/PageHeader';
 import { JsonLd, breadcrumbLd, faqLd } from '@/shared/seo/jsonld';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Вопросы и ответы',

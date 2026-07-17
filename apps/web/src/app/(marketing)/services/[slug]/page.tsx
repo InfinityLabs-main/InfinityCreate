@@ -14,7 +14,7 @@ import { Badge } from '@/shared/ui/Badge';
 import { formatPrice } from '@/shared/lib/format';
 import { JsonLd, breadcrumbLd, serviceLd } from '@/shared/seo/jsonld';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 // ISR: заранее генерируем пути известных услуг.
 export async function generateStaticParams() {

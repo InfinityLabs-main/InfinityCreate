@@ -1,16 +1,12 @@
 import { prisma } from '@nebula/db';
 import { cache } from 'react';
 
-// Только опубликованные посты (publishedAt в прошлом). Fail-safe при сборке.
+// Только опубликованные посты (publishedAt в прошлом).
 export const getPublishedPosts = cache(async () => {
-  try {
-    return await prisma.post.findMany({
-      where: { deletedAt: null, publishedAt: { not: null, lte: new Date() } },
-      orderBy: { publishedAt: 'desc' },
-    });
-  } catch {
-    return [];
-  }
+  return prisma.post.findMany({
+    where: { deletedAt: null, publishedAt: { not: null, lte: new Date() } },
+    orderBy: { publishedAt: 'desc' },
+  });
 });
 
 export const getPostBySlug = cache(async (slug: string) => {
