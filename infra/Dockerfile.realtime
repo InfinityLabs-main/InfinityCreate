@@ -26,8 +26,13 @@ RUN addgroup -g 1001 nodejs && adduser -u 1001 -G nodejs -S node-rt
 # @prisma/client и сгенерированный клиент разрешаются из корня).
 COPY --from=build --chown=node-rt:nodejs /app/node_modules ./node_modules
 COPY --from=build --chown=node-rt:nodejs /app/packages ./packages
+# pnpm ставит зависимости пакета в его локальный node_modules (симлинки на
+# store в корне) — без него не резолвятся socket.io, ioredis и т.д.
+COPY --from=build --chown=node-rt:nodejs /app/apps/realtime/node_modules ./apps/realtime/node_modules
 COPY --from=build --chown=node-rt:nodejs /app/apps/realtime/dist ./apps/realtime/dist
 COPY --from=build --chown=node-rt:nodejs /app/apps/realtime/package.json ./apps/realtime/
 USER node-rt
 EXPOSE 4000
-CMD ["node", "apps/realtime/dist/index.js"]
+# @nebula/db экспортирует TS-исходник (src/index.ts) без сборки — обычный
+# node его не грузит, поэтому запускаем dist через tsx как ESM-loader.
+CMD ["node", "--import", "./apps/realtime/node_modules/tsx/dist/loader.mjs", "apps/realtime/dist/index.js"]

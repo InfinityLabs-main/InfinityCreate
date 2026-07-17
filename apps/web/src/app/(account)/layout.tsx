@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ShieldCheck } from 'lucide-react';
 import { requireUser } from '@/shared/auth/session';
 import { signOut } from '@/shared/auth/auth';
 import { AccountNav } from '@/features/account/AccountNav';
@@ -25,6 +26,14 @@ export default async function AccountLayout({ children }: { children: React.Reac
             </b>
           </Link>
           <div className="flex items-center gap-3">
+            {(user.role === 'MANAGER' || user.role === 'ADMIN') && (
+              <Link
+                href="/admin"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-accent/40 bg-accent/10 px-4 py-2 text-sm text-ink transition-colors hover:bg-accent/15"
+              >
+                <ShieldCheck size={15} className="text-accent" /> Админка
+              </Link>
+            )}
             <span className="hidden text-sm text-ink-soft sm:inline">
               {user.name ?? user.email}
             </span>

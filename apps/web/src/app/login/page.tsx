@@ -23,13 +23,14 @@ export default async function LoginPage({
   searchParams: Promise<{ callbackUrl?: string; error?: string; twofa?: string }>;
 }) {
   const session = await auth();
-  if (session) redirect('/dashboard');
+  if (session) redirect('/after-login');
   const sp = await searchParams;
   const needCode = sp.twofa === '1';
 
   async function login(formData: FormData) {
     'use server';
-    const callbackUrl = sp.callbackUrl ?? '/dashboard';
+    // По умолчанию — маршрутизатор по роли (/after-login), если не задан явный возврат.
+    const callbackUrl = sp.callbackUrl ?? '/after-login';
     const email = String(formData.get('email') ?? '');
     const password = String(formData.get('password') ?? '');
     const code = String(formData.get('code') ?? '');
